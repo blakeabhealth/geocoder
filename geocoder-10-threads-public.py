@@ -14,7 +14,9 @@ server = os.environ['SQL_URL']
 database = os.environ['SQL_DB']
 username = os.environ['SQL_USR']
 password = os.environ['SQL_PWD']  
-driver= '{ODBC Driver 17 for SQL Server}'
+drivers = [item for item in pyodbc.drivers()]
+driver = drivers[-1]
+print("driver:{}".format(driver))
 
 output = io.StringIO()
 cnxn = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
