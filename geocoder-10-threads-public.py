@@ -128,6 +128,8 @@ try:
         Headers  = {'Content-Type':'application/json'}
         body = {}
         x = requests.post(url, headers=Headers, data=body)
+        print(url)
+        print(x.content)
     else:
         print("No more runs required")
 except:
