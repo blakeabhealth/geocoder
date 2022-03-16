@@ -104,33 +104,31 @@ def geocode(threadName, operator):
     time.sleep(5)
     sys.stdout.flush()
 
-try:
-    t1 = threading.Thread(target=geocode, args=("Geocode 0-1000", df1000,))
-    t2 = threading.Thread(target=geocode, args=("Geocode 1000-2000", df2000,))
-    t3 = threading.Thread(target=geocode, args=("Geocode 2000-3000", df3000,))
-    t4 = threading.Thread(target=geocode, args=("Geocode 3000-4000", df4000,))
-    t5 = threading.Thread(target=geocode, args=("Geocode 4000-5000", df5000,))
-    t6 = threading.Thread(target=geocode, args=("Geocode 5000-6000", df6000,))
-    t7 = threading.Thread(target=geocode, args=("Geocode 6000-7000", df7000,))
-    t8 = threading.Thread(target=geocode, args=("Geocode 7000-8000", df8000,))
-    t9 = threading.Thread(target=geocode, args=("Geocode 8000-9000", df9000,))
-    t10 = threading.Thread(target=geocode, args=("Geocode 9000-10000", df10000,))
-    commands = {"Command":["t1.start()", "t2.start()", "t3.start()", "t4.start()", "t5.start()", "t6.start()", "t7.start()", "t8.start()", "t9.start()", "t10.start()"]}
-    for i in range(0, runs_possible):
-        eval(commands["Command"][i])
-    joincommands = {"Command":["t1.join()", "t2.join()", "t3.join()", "t4.join()", "t5.join()", "t6.join()", "t7.join()", "t8.join()", "t9.join()", "t10.join()"]}
-    for i in range(0, runs_possible):
-        eval(joincommands["Command"][i])
-    print("All threads have been generated and completed in a total of %s seconds" % (time.time() - start_time))
-    if total_runs > runs_possible:
-        print(total_runs)
-        print("Relaunching container to process more")
-        print(url)
-        Headers  = {'Content-Type':'application/json'}
-        body = {}
-        x = requests.post(url=url, headers=Headers, data=body)
-        print(x.content)
-    else:
-        print("No more runs required")
-except:
-    print("something has gone wrong")
+
+t1 = threading.Thread(target=geocode, args=("Geocode 0-1000", df1000,))
+t2 = threading.Thread(target=geocode, args=("Geocode 1000-2000", df2000,))
+t3 = threading.Thread(target=geocode, args=("Geocode 2000-3000", df3000,))
+t4 = threading.Thread(target=geocode, args=("Geocode 3000-4000", df4000,))
+t5 = threading.Thread(target=geocode, args=("Geocode 4000-5000", df5000,))
+t6 = threading.Thread(target=geocode, args=("Geocode 5000-6000", df6000,))
+t7 = threading.Thread(target=geocode, args=("Geocode 6000-7000", df7000,))
+t8 = threading.Thread(target=geocode, args=("Geocode 7000-8000", df8000,))
+t9 = threading.Thread(target=geocode, args=("Geocode 8000-9000", df9000,))
+t10 = threading.Thread(target=geocode, args=("Geocode 9000-10000", df10000,))
+commands = {"Command":["t1.start()", "t2.start()", "t3.start()", "t4.start()", "t5.start()", "t6.start()", "t7.start()", "t8.start()", "t9.start()", "t10.start()"]}
+for i in range(0, runs_possible):
+    eval(commands["Command"][i])
+joincommands = {"Command":["t1.join()", "t2.join()", "t3.join()", "t4.join()", "t5.join()", "t6.join()", "t7.join()", "t8.join()", "t9.join()", "t10.join()"]}
+for i in range(0, runs_possible):
+    eval(joincommands["Command"][i])
+print("All threads have been generated and completed in a total of %s seconds" % (time.time() - start_time))
+if total_runs > runs_possible:
+    print(total_runs)
+    print("Relaunching container to process more")
+    print(url)
+    Headers  = {'Content-Type':'application/json'}
+    body = {}
+    x = requests.post(url=url, headers=Headers, data=body)
+    print(x.content)
+else:
+    print("No more runs required")
