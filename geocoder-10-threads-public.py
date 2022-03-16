@@ -8,12 +8,14 @@ import sys
 import threading
 import math
 import os
+import requests
 
 start_time = time.time()
 server = os.environ['SQL_URL']
 database = os.environ['SQL_DB']
 username = os.environ['SQL_USR']
-password = os.environ['SQL_PWD']  
+password = os.environ['SQL_PWD']
+url = os.environ['GEOCODE_URL']
 drivers = [item for item in pyodbc.drivers()]
 driver = drivers[-1]
 print("driver:{}".format(driver))
@@ -35,6 +37,7 @@ row = cursor.fetchone()
 print("Total rows detected for geocoding is "+str(row[0]))
 rowcount = int(row[0])
 runs_possible = math.ceil(rowcount/1000)
+total_runs = runs_possible
 print(str(runs_possible)+" before adjustment")
 if runs_possible > 10:
     print("Setting maximum runs to API limit of 10,000")
@@ -115,6 +118,17 @@ try:
     commands = {"Command":["t1.start()", "t2.start()", "t3.start()", "t4.start()", "t5.start()", "t6.start()", "t7.start()", "t8.start()", "t9.start()", "t10.start()"]}
     for i in range(0, runs_possible):
         eval(commands["Command"][i])
+    joincommands = {"Command":["t1.join()", "t2.join()", "t3.join()", "t4.join()", "t5.join()", "t6.join()", "t7.join()", "t8.join()", "t9.join()", "t10.join()"]}
+    for i in range(0, runs_possible):
+        eval(joincommands["Command"][i])
+    print("All threads have been generated and completed in a total of %s seconds" % (time.time() - start_time))
+    if total_runs > runs_possible:
+        print(total_runs)
+        print("Relaunching container to process more")
+        Headers  = {'Content-Type':'application/json'}
+        body = {}
+        x = requests.post(url, headers=Headers, data=body)
+    else
+        print("No more runs required")
 except:
     print("something has gone wrong")
-print("All threads have been generated in a total of %s seconds" % (time.time() - start_time))
