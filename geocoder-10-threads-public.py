@@ -125,7 +125,6 @@ print("All threads have been generated and completed in a total of %s seconds" %
 if total_runs > runs_possible:
     print(total_runs)
     print("Relaunching container to process more")
-    print(url)
     Headers  = {'Content-Type':'application/json'}
     body = {}
     x = requests.post(url=url, headers=Headers, data=body)
