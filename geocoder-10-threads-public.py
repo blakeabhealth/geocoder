@@ -8,7 +8,6 @@ import sys
 import threading
 import math
 import os
-import requests
 
 start_time = time.time()
 server = os.environ['SQL_URL']
@@ -20,50 +19,74 @@ drivers = [item for item in pyodbc.drivers()]
 driver = drivers[-1]
 print("driver:{}".format(driver))
 
-output = io.StringIO()
-cnxn = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
-cursor = cnxn.cursor()
-record_count_sql = '''SELECT count(ca.recordId)
+def main():
+    output = io.StringIO()
+    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+    cursor = cnxn.cursor()
+    record_count_sql = '''SELECT count(ca.recordId)
+    FROM staging.clientAddress ca
+    LEFT JOIN lookup.geocodeInfo gi
+    ON ca.recordId = gi.recordId  and ca.id = gi.addrId
+    WHERE gi.addrId IS NULL;'''
+    cursor.execute(record_count_sql)
+    row = cursor.fetchone()
+    print("Total rows detected for geocoding is "+str(row[0]))
+    rowcount = int(row[0])
+    global runs_possible
+    runs_possible = math.ceil(rowcount/1000)
+    global total_runs
+    total_runs = runs_possible
+    print(str(runs_possible)+" before adjustment")
+    if runs_possible > 10:
+        print("Setting maximum runs to API limit of 10,000")
+        runs_possible = 10
+    elif runs_possible == 0:
+        print("There are no lines to geocode")
+        quit()
+    else: runs_possible = runs_possible
+    print(str(runs_possible)+" runs of 1000 in scope for this function")
 
-FROM staging.clientAddress ca
 
-LEFT JOIN lookup.geocodeInfo gi
+    sql = '''SELECT TOP {} concat(ca.recordId, ca.id) as uniqueid, ca.address1, ca.city, ca.state, ca.zipcode
+    FROM staging.clientAddress ca
+    LEFT JOIN lookup.geocodeInfo gi
+    ON ca.recordId = gi.recordId  and ca.id = gi.addrId
+    WHERE gi.addrId IS NULL'''.format(runs_possible*1000)
+    global df
+    df = pd.read_sql(sql,cnxn)
+    frames = {"Command":["df1000 = df.iloc[:1000,:]","df2000 = df.iloc[1000:2000]","df3000 = df.iloc[2000:3000]","df4000 = df.iloc[3000:4000]","df5000 = df.iloc[4000:5000]","df6000 = df.iloc[5000:6000]","df7000 = df.iloc[6000:7000]","df8000 = df.iloc[7000:8000]","df9000 = df.iloc[8000:9000]", "df10000 = df.iloc[9000:10000]"]}
+    for i in range(0, runs_possible):
+        exec(frames["Command"][i], globals())
+    global t1
+    global t2
+    global t3
+    global t4
+    global t5
+    global t6  
+    global t7
+    global t8
+    global t9  
+    global t10    
+    
+    t1 = threading.Thread(target=geocode, args=("Geocode 0-1000", df1000,))
+    t2 = threading.Thread(target=geocode, args=("Geocode 1000-2000", df2000,))
+    t3 = threading.Thread(target=geocode, args=("Geocode 2000-3000", df3000,))
+    t4 = threading.Thread(target=geocode, args=("Geocode 3000-4000", df4000,))
+    t5 = threading.Thread(target=geocode, args=("Geocode 4000-5000", df5000,))
+    t6 = threading.Thread(target=geocode, args=("Geocode 5000-6000", df6000,))
+    t7 = threading.Thread(target=geocode, args=("Geocode 6000-7000", df7000,))
+    t8 = threading.Thread(target=geocode, args=("Geocode 7000-8000", df8000,))
+    t9 = threading.Thread(target=geocode, args=("Geocode 8000-9000", df9000,))
+    t10 = threading.Thread(target=geocode, args=("Geocode 9000-10000", df10000,))
+    commands = {"Command":["t1.start()", "t2.start()", "t3.start()", "t4.start()", "t5.start()", "t6.start()", "t7.start()", "t8.start()", "t9.start()", "t10.start()"]}
+    for i in range(0, runs_possible):
+        eval(commands["Command"][i], globals())
+    joincommands = {"Command":["t1.join()", "t2.join()", "t3.join()", "t4.join()", "t5.join()", "t6.join()", "t7.join()", "t8.join()", "t9.join()", "t10.join()"]}
+    for i in range(0, runs_possible):
+        eval(joincommands["Command"][i], globals())
+    print("All threads have been generated and completed in a total of %s seconds" % (time.time() - start_time))
+    print("The number of runs left is "+str(total_runs))
 
-ON ca.recordId = gi.recordId  and ca.id = gi.addrId
-
-WHERE gi.addrId IS NULL;'''
-cursor.execute(record_count_sql)
-row = cursor.fetchone()
-print("Total rows detected for geocoding is "+str(row[0]))
-rowcount = int(row[0])
-runs_possible = math.ceil(rowcount/1000)
-total_runs = runs_possible
-print(str(runs_possible)+" before adjustment")
-if runs_possible > 10:
-    print("Setting maximum runs to API limit of 10,000")
-    runs_possible = 10
-elif runs_possible == 0:
-    print("There are no lines to geocode")
-    quit()
-else: runs_possible = runs_possible
-print(str(runs_possible)+" runs of 1000 in scope for this function")
-
-
-sql = '''SELECT TOP {} concat(ca.recordId, ca.id) as uniqueid, ca.address1, ca.city, ca.state, ca.zipcode
-
-FROM staging.clientAddress ca
-
-LEFT JOIN lookup.geocodeInfo gi
-
-ON ca.recordId = gi.recordId  and ca.id = gi.addrId
-
-WHERE gi.addrId IS NULL'''.format(runs_possible*1000)
-
-df = pd.read_sql(sql,cnxn)
-frames = {"Command":["df1000 = df.iloc[:1000,:]","df2000 = df.iloc[1000:2000]","df3000 = df.iloc[2000:3000]","df4000 = df.iloc[3000:4000]","df5000 = df.iloc[4000:5000]","df6000 = df.iloc[5000:6000]","df7000 = df.iloc[6000:7000]","df8000 = df.iloc[7000:8000]","df9000 = df.iloc[8000:9000]", "df10000 = df.iloc[9000:10000]"]}
-for i in range(0, runs_possible):
-    exec(frames["Command"][i]) 
-catch = []
 def geocode(threadName, operator):
     print(threadName+" "+time.asctime())
     start_time = time.time()
@@ -104,30 +127,7 @@ def geocode(threadName, operator):
     time.sleep(5)
     sys.stdout.flush()
 
-
-t1 = threading.Thread(target=geocode, args=("Geocode 0-1000", df1000,))
-t2 = threading.Thread(target=geocode, args=("Geocode 1000-2000", df2000,))
-t3 = threading.Thread(target=geocode, args=("Geocode 2000-3000", df3000,))
-t4 = threading.Thread(target=geocode, args=("Geocode 3000-4000", df4000,))
-t5 = threading.Thread(target=geocode, args=("Geocode 4000-5000", df5000,))
-t6 = threading.Thread(target=geocode, args=("Geocode 5000-6000", df6000,))
-t7 = threading.Thread(target=geocode, args=("Geocode 6000-7000", df7000,))
-t8 = threading.Thread(target=geocode, args=("Geocode 7000-8000", df8000,))
-t9 = threading.Thread(target=geocode, args=("Geocode 8000-9000", df9000,))
-t10 = threading.Thread(target=geocode, args=("Geocode 9000-10000", df10000,))
-commands = {"Command":["t1.start()", "t2.start()", "t3.start()", "t4.start()", "t5.start()", "t6.start()", "t7.start()", "t8.start()", "t9.start()", "t10.start()"]}
-for i in range(0, runs_possible):
-    eval(commands["Command"][i])
-joincommands = {"Command":["t1.join()", "t2.join()", "t3.join()", "t4.join()", "t5.join()", "t6.join()", "t7.join()", "t8.join()", "t9.join()", "t10.join()"]}
-for i in range(0, runs_possible):
-    eval(joincommands["Command"][i])
-print("All threads have been generated and completed in a total of %s seconds" % (time.time() - start_time))
-if total_runs > runs_possible:
-    print(total_runs)
-    print("Relaunching container to process more")
-    Headers  = {'Content-Type':'application/json'}
-    body = {}
-    x = requests.post(url=url, headers=Headers, data=body)
-    print(x.content)
-else:
-    print("No more runs required")
+while True:
+    main()
+    if total_runs < runs_possible:
+        break
